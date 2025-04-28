@@ -10,13 +10,25 @@ int main() {
     host_serial_init();
     gpio_config_pullup(A3, PULL_OFF);
     gpio_config_mode(A3, ANALOG);
-    DAC1->CR = 0x0; //reset, just in case.
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
-    DAC1->CR |= (0b000 << DAC_CR_TSEL1_Pos); //set trigger source tim6. see 17.4.6 for bit codes
+    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
+    TIM6->CR1 = 0;
+    TIM6->PSC = 4;
+    TIM6->ARR = 1;
+    TIM6->CR2 &= ~TIM_CR2_MMS;
+    TIM6->CR2 |= (0x2 << TIM_CR2_MMS_Pos); // Set TRGO on update event
+    TIM6->CR1 |= TIM_CR1_CEN; 
+    DAC1->CR = 0x0; //reset, just in case.
+    DAC1->CR |= 0x1; // Enabling DAC1
     DAC1->CR |= DAC_CR_TEN1; //enable the trigger source
     DAC1->CR |= (0b10 << DAC_CR_WAVE1_Pos); //enables the triangle wave
-    DAC1->CR |= (0b1011 << DAC_CR_MAMP1_Pos); //triangle wave max amplitude ( >= 1011)
+    DAC1->CR |= (0b0111 << DAC_CR_MAMP1_Pos); //triangle wave max amplitude ( >= 1011)
+    // DAC1->CR &= ~(DAC_CR_WAVE1 | DAC_CR_MAMP1 | DAC_CR_TSEL1); // Clear WAVE, MAMP, TSEL
+    // DAC1->CR |= DAC_CR_WAVE1_1;          // Enable triangle wave generation (WAVE1 = 0b10)
+    // DAC1->CR |= (0b1000 << DAC_CR_MAMP1_Pos); // Max amplitude (MAMP1 = 0x7 → 4095 steps)
     
+    // DAC1->CR |= DAC_CR_TEN1;             // Enable trigger (TEN1)
+    // DAC1->CR |= DAC_CR_EN1;              // Enable DAC Channel 1
     
     /*
     host_serial_init();
