@@ -22,28 +22,22 @@ int main() {
     gpio_config_mode(A3, ANALOG);
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
-    signed int sin_table[180];
+    signed int sin_table[256];
     float sf;
     DAC_init();
-    for (int i = 0; i < 180; i++){
-        sf = sin(3.1415926 * (i + 90)/180);
+    for (int i = 0; i < 256; i++){
+        sf = cos(3.1415926 * ((float)i / 128));
         sin_table[i] = (1+sf) * 2048;
-        if(sin_table[i] == 0x1000){
+        if(sin_table[i] >= 0x1000){
             sin_table[i] = 0xFFF;
         }
     }
-    int i = 0;
+    uint32_t phase = 0;
+    uint32_t phase_increment = 1 << 24;
     while (true) {
-        i++;
-        DAC1->DHR12R1 = sin_table[i];
-        for (volatile int j = 0; j < 5; j++){}
-        if (i == 180) {
-            while (i > 0) {
-                DAC1->DHR12R1 = sin_table[i];
-                i--;
-                for (volatile int j = 0; j < 5; j++){}
-            }
-        }
+        phase += phase_increment;
+        uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
+        DAC->DHR12R1 = sin_table[index];
     }
     // DAC1->CR &= ~(DAC_CR_WAVE1 | DAC_CR_MAMP1 | DAC_CR_TSEL1); // Clear WAVE, MAMP, TSEL
     // DAC1->CR |= DAC_CR_WAVE1_1;          // Enable triangle wave generation (WAVE1 = 0b10)
