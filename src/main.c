@@ -15,9 +15,13 @@ void DAC_init(void) {
     DAC1->CR |= (0b0111 << DAC_CR_MAMP1_Pos); //triangle wave max amplitude ( >= 1011)
 }
 
+uint32_t pitch(int freq)
+{
+    return ((uint64_t)16777216 * freq) / 2210;
+}
+
 int main() {
     host_serial_init();
-    SysTick_initialize();
     gpio_config_pullup(A3, PULL_OFF);
     gpio_config_mode(A3, ANALOG);
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
@@ -33,15 +37,14 @@ int main() {
         }
     }
     uint32_t phase = 0;
-    uint32_t phase_increment = 1 << 24;
+    uint32_t phase_increment = pitch(293);
     while (true) {
         phase += phase_increment;
         uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-        DAC->DHR12R1 = sin_table[index];
+        DAC1->DHR12R1 = sin_table[index];
     }
     // DAC1->CR &= ~(DAC_CR_WAVE1 | DAC_CR_MAMP1 | DAC_CR_TSEL1); // Clear WAVE, MAMP, TSEL
     // DAC1->CR |= DAC_CR_WAVE1_1;          // Enable triangle wave generation (WAVE1 = 0b10)
-    // DAC1->CR |= (0b1000 << DAC_CR_MAMP1_Pos); // Max amplitude (MAMP1 = 0x7 → 4095 steps)
     
     // DAC1->CR |= DAC_CR_TEN1;             // Enable trigger (TEN1)
     // DAC1->CR |= DAC_CR_EN1;              // Enable DAC Channel 1
