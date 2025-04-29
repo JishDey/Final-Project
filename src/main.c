@@ -2,9 +2,32 @@
 #include "ee14lib.h"
 #include <math.h>
 
+// #define 220 A2
+// #define 349 F3
+// #define 329 E3
+// #define 293 D3
+
 int _write(int file, char *data, int len){
     serial_write(USART2, data, len);
     return len;
+}
+
+void EXTI4_IRQHandler(void)
+{
+    if (EXTI->PR1 & EXTI_PR1_PIF4) {
+        EXTI->PR1 |= EXTI_PR1_PIF4;
+        tick = 0;
+    }
+}
+
+void config_gpio_interrupt(void)
+{
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+    SYSCFG->EXTICR[1] = 0b001;
+    EXTI->FTSR1 |= EXTI_FTSR1_FT4;
+    EXTI->IMR1 |= EXTI_IMR1_IM4;
+    NVIC_SetPriority(EXTI4_IRQn, 2);
+    NVIC_EnableIRQ(EXTI4_IRQn);
 }
 
 void DAC_init(void) {
@@ -20,13 +43,121 @@ uint32_t pitch(int freq)
     return ((uint64_t)16777216 * freq) / 2210;
 }
 
+signed int sin_table[256];
+
+play(int freq, int length) {
+    uint32_t phase = 0;
+    uint32_t phase_increment = pitch(freq);
+    for (int i = 0; i < length; i++) {
+        phase += phase_increment;
+        uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
+        DAC1->DHR12R1 = sin_table[index];
+    }
+}
+
+void classical() {
+    int tempo = 90000;
+    play(220, tempo);     //A
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(349, tempo);     //F
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);     //E
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(293, tempo);     //D
+    play(220, tempo);     //A
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(349, tempo);     //F
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);     //E
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(293, tempo);     //D
+    play(220, tempo);     //A
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(349, tempo);     //F
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);     //E
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(293, tempo);     //D
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(220, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(349, tempo);  
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(293, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(220, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(196, tempo); //G
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(349, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(220, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(196, tempo); //G
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(349, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(220, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(196, tempo); //G
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(349, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);  
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(220, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(196, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(293, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(440, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(593, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(493, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(246, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(293, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(493, tempo); 
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(392, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(196, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(246, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(392, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(165, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(220, tempo);
+    for (volatile i = 0; i < tempo / 5; i++) { }
+    play(329, tempo);
+}
+
+
 int main() {
     host_serial_init();
     gpio_config_pullup(A3, PULL_OFF);
     gpio_config_mode(A3, ANALOG);
+    // gpio_config_pullup(A3, PULL_UP);
+    // gpio_config_mode(A3, );
+    config_gpio_interrupt();
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
-    signed int sin_table[256];
     float sf;
     DAC_init();
     for (int i = 0; i < 256; i++){
@@ -36,13 +167,7 @@ int main() {
             sin_table[i] = 0xFFF;
         }
     }
-    uint32_t phase = 0;
-    uint32_t phase_increment = pitch(293);
-    while (true) {
-        phase += phase_increment;
-        uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-        DAC1->DHR12R1 = sin_table[index];
-    }
+
     // DAC1->CR &= ~(DAC_CR_WAVE1 | DAC_CR_MAMP1 | DAC_CR_TSEL1); // Clear WAVE, MAMP, TSEL
     // DAC1->CR |= DAC_CR_WAVE1_1;          // Enable triangle wave generation (WAVE1 = 0b10)
     
