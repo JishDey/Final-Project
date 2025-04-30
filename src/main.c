@@ -91,7 +91,7 @@ uint32_t pitch(int freq)
 
 void play(int freq, int length) {
     phase_increment = pitch(freq);
-    delay_ms(500);
+    delay_ms(200);
     phase_increment = 0;
 }
 
@@ -296,7 +296,6 @@ int main() {
     sin_table_init();
     sqr_table_init();
     DAC_init();
-    classical();
     //phase_increment = 1 << 24;
     // while (true) {
     //     phase += phase_increment;
