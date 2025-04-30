@@ -7,6 +7,19 @@ int _write(int file, char *data, int len){
     return len;
 }
 
+uint32_t phase = 0;
+uint32_t phase_increment = 0;
+
+
+signed int sin_table[256];
+
+void SysTick_Handler(void)
+{
+    phase += phase_increment;
+    uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
+    DAC1->DHR12R1 = sin_table[index];
+}
+
 void config_gpio_interrupt(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
@@ -71,32 +84,24 @@ void DAC_init(void) {
 
 uint32_t pitch(int freq)
 {
-    return ((uint64_t)16777216 * freq) / 2216;
+    return ((uint64_t)16777216 * freq) / 380;
 }
 
-signed int sin_table[256];
 
 void play(int freq, int length) {
-    uint32_t phase = 0;
-    uint32_t phase_increment = pitch(freq);
+    phase_increment = pitch(freq);
     for (int i = 0; i < length; i++) {
-        phase += phase_increment;
-        uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-        DAC1->DHR12R1 = sin_table[index];
     }
+    phase_increment = 0;
 }
 
 void EXTI4_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF4) {
         EXTI->PR1 |= EXTI_PR1_PIF4;
-        uint32_t phase = 0;
-        uint32_t phase_increment = 3740047;//pitch(note7);
-        while (!gpio_read(D12)) {
-            phase += phase_increment;
-            uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-            DAC1->DHR12R1 = sin_table[index];
-        }
+        phase_increment = pitch(note7);
+        while (!gpio_read(D12)) { }
+        phase_increment = 0;
     }
 }
 
@@ -104,13 +109,9 @@ void EXTI3_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF3) {
         EXTI->PR1 |= EXTI_PR1_PIF3;
-        uint32_t phase = 0;
-        uint32_t phase_increment = pitch(note1);
-        while (!gpio_read(A2)) {
-            phase += phase_increment;
-            uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-            DAC1->DHR12R1 = sin_table[index];
-        }
+        phase_increment = pitch(note1);
+        while (!gpio_read(A2)) { }
+        phase_increment = 0;
     }
 }
 
@@ -118,13 +119,9 @@ void EXTI2_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF2) {
         EXTI->PR1 |= EXTI_PR1_PIF2;
-        uint32_t phase = 0;
-        uint32_t phase_increment = pitch(note6);
-        while (!gpio_read(A7)) {
-            phase += phase_increment;
-            uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-            DAC1->DHR12R1 = sin_table[index];
-        }
+        phase_increment = pitch(note6);
+        while (!gpio_read(A7)) { }
+        phase_increment = 0;
     }
 }
 
@@ -132,13 +129,9 @@ void EXTI1_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF1) {
         EXTI->PR1 |= EXTI_PR1_PIF1;
-        uint32_t phase = 0;
-        uint32_t phase_increment = pitch(note5);
-        while (!gpio_read(A1)) {
-            phase += phase_increment;
-            uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-            DAC1->DHR12R1 = sin_table[index];
-        }
+        phase_increment = pitch(note5);
+        while (!gpio_read(A1)) { }
+        phase_increment = 0;
     }
 }
 
@@ -146,33 +139,21 @@ void EXTI9_5_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF5) {
         EXTI->PR1 |= EXTI_PR1_PIF5;
-        uint32_t phase = 0;
-        uint32_t phase_increment = pitch(note4);
-        while (!gpio_read(A4)) {
-            phase += phase_increment;
-            uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-            DAC1->DHR12R1 = sin_table[index];
-        }
+        phase_increment = pitch(note4);
+        while (!gpio_read(A4)) { }
+        phase_increment = 0;
     }
     if (EXTI->PR1 & EXTI_PR1_PIF6) {
         EXTI->PR1 |= EXTI_PR1_PIF6;
-        uint32_t phase = 0;
-        uint32_t phase_increment = pitch(note3);
-        while (!gpio_read(A5)) {
-            phase += phase_increment;
-            uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-            DAC1->DHR12R1 = sin_table[index];
-        }
+        phase_increment = pitch(note3);
+        while (!gpio_read(A5)) { }
+        phase_increment = 0;
     }
     if (EXTI->PR1 & EXTI_PR1_PIF7) {
         EXTI->PR1 |= EXTI_PR1_PIF7;
-        uint32_t phase = 0;
-        uint32_t phase_increment = pitch(note2);
-        while (!gpio_read(A6)) {
-            phase += phase_increment;
-            uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-            DAC1->DHR12R1 = sin_table[index];
-        }
+        phase_increment = pitch(note2);
+        while (!gpio_read(A6)) { }
+        phase_increment = 0;
     }
 }
 
@@ -288,6 +269,8 @@ int main() {
     gpio_config_mode(A5, INPUT);
     gpio_config_pullup(A6, PULL_UP);
     gpio_config_mode(A6, INPUT);
+    config_gpio_interrupt();
+    SysTick_initialize();
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
     float sf;
@@ -299,9 +282,7 @@ int main() {
         }
     }
     DAC_init();
-    uint32_t phase = 0;
-    uint32_t phase_increment = 1 << 24;
-    config_gpio_interrupt();
+    //phase_increment = 1 << 24;
     // while (true) {
     //     phase += phase_increment;
     //     uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
