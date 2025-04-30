@@ -48,23 +48,23 @@ void SysTick_initialize(void) {
                                                     // LOAD value. 
 }
 
-void EXTI4_IRQHandler(void)
-{
-    if (EXTI->PR1 & EXTI_PR1_PIF4) {
-        EXTI->PR1 |= EXTI_PR1_PIF4;
-        tick = 0;
-    }
-}
+// void EXTI4_IRQHandler(void)
+// {
+//     if (EXTI->PR1 & EXTI_PR1_PIF4) {
+//         EXTI->PR1 |= EXTI_PR1_PIF4;
+//         tick = 0;
+//     }
+// }
 
-void config_gpio_interrupt(void)
-{
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-    SYSCFG->EXTICR[1] = 0b001;
-    EXTI->FTSR1 |= EXTI_FTSR1_FT4;
-    EXTI->IMR1 |= EXTI_IMR1_IM4;
-    NVIC_SetPriority(EXTI4_IRQn, 2);
-    NVIC_EnableIRQ(EXTI4_IRQn);
-}
+// void config_gpio_interrupt(void)
+// {
+//     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+//     SYSCFG->EXTICR[1] = 0b001;
+//     EXTI->FTSR1 |= EXTI_FTSR1_FT4;
+//     EXTI->IMR1 |= EXTI_IMR1_IM4;
+//     NVIC_SetPriority(EXTI4_IRQn, 2);
+//     NVIC_EnableIRQ(EXTI4_IRQn);
+// }
 
 void delay_ms(int ms)
 {
