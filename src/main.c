@@ -12,6 +12,7 @@ uint32_t phase_increment = 0;
 
 
 signed int sin_table[256];
+signed int sqr_table[256];
 
 void SysTick_Handler(void)
 {
@@ -74,13 +75,13 @@ void DAC_init(void) {
     DAC1->CR |= (0b0111 << DAC_CR_MAMP1_Pos); //triangle wave max amplitude ( >= 1011)
 }
 
-#define note1 262
-#define note2 294
-#define note3 330
+#define note7 262
+#define note6 294
+#define note5 330
 #define note4 349
-#define note5 392
-#define note6 440
-#define note7 494
+#define note3 392
+#define note2 440
+#define note1 494
 
 uint32_t pitch(int freq)
 {
@@ -90,8 +91,7 @@ uint32_t pitch(int freq)
 
 void play(int freq, int length) {
     phase_increment = pitch(freq);
-    for (int i = 0; i < length; i++) {
-    }
+    delay_ms(500);
     phase_increment = 0;
 }
 
@@ -250,9 +250,29 @@ void classical() {
     play(329, tempo);
 }
 
+void sin_table_init() {
+    float sf;
+    for (int i = 0; i < 256; i++){
+        sf = cos(3.1415926 * ((float)i / 128));
+        sin_table[i] = (1+sf) * 2048;
+        if(sin_table[i] >= 0x1000){
+            sin_table[i] = 0xFFF;
+        }
+    }
+}
+
+void sqr_table_init() {
+    float sf;
+    for (int i = 0; i < 256; i++){
+        if(i < 128)
+            sqr_table[i] = 0;
+        else
+            sqr_table[i] = 2048;
+    }
+}
 
 int main() {
-    host_serial_init();
+    //host_serial_init();
     gpio_config_pullup(A3, PULL_OFF);
     gpio_config_mode(A3, ANALOG);
     gpio_config_pullup(D12, PULL_UP);
@@ -273,15 +293,10 @@ int main() {
     SysTick_initialize();
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
-    float sf;
-    for (int i = 0; i < 256; i++){
-        sf = cos(3.1415926 * ((float)i / 128));
-        sin_table[i] = (1+sf) * 2048;
-        if(sin_table[i] >= 0x1000){
-            sin_table[i] = 0xFFF;
-        }
-    }
+    sin_table_init();
+    sqr_table_init();
     DAC_init();
+    classical();
     //phase_increment = 1 << 24;
     // while (true) {
     //     phase += phase_increment;
