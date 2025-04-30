@@ -27,7 +27,7 @@ void SysTick_Handler(void)
 void SysTick_initialize(void) {
     // TODO: figure out what each line of code in this function does
     SysTick->CTRL = 0;
-    SysTick->LOAD = 3999; // This sets the rate of interupts for this function
+    SysTick->LOAD = 399; // This sets the rate of interupts for this function
                           // based on the internal cpu clock. The value 3999
                           // triggers an interupt every millisecond.
 
