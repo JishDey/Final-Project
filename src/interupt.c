@@ -24,7 +24,7 @@ volatile int tick = 0;
 void SysTick_initialize(void) {
     // TODO: figure out what each line of code in this function does
     SysTick->CTRL = 0;
-    SysTick->LOAD = 79; // This sets the rate of interupts for this function
+    SysTick->LOAD = 159; // This sets the rate of interupts for this function
                           // based on the internal cpu clock. The value 3999
                           // triggers an interupt every millisecond.
 

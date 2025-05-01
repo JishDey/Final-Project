@@ -86,7 +86,7 @@ void DAC_init(void) {
 
 uint32_t pitch(int freq)
 {
-    return ((uint64_t)16777216 * freq) / 190;
+    return ((uint64_t)16777216 * freq) / 95;
 }
 
 
@@ -102,11 +102,10 @@ void EXTI4_IRQHandler(void)
         EXTI->PR1 |= EXTI_PR1_PIF4;
         const float base_freq = note7;
         while (!gpio_read(D12)) {
-            phase_increment = adc_read_single() << 24;  // 0–4095
-            // printf("%d\n", adc_read_single());
-            // float n = ((float)adc_val / 4095.0f) * 2.0f - 1.0f;  // n in [-1, +1]
-            // float multiplier = powf(2.0f, n / 12.0f);
-            // phase_increment = pitch(base_freq * multiplier); 
+            uint16_t adc_val = adc_read_single();  // 0–63
+            float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
+            float multiplier = powf(2.0f, n / 12.0f);
+            phase_increment = pitch(base_freq * multiplier); 
         }
         phase_increment = 0;
     }
@@ -116,8 +115,13 @@ void EXTI3_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF3) {
         EXTI->PR1 |= EXTI_PR1_PIF3;
-        phase_increment = pitch(note1);
-        while (!gpio_read(A2)) { }
+        const float base_freq = pitch(note1);
+        while (!gpio_read(A2)) {
+            uint16_t adc_val = adc_read_single();  // 0–63
+            float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
+            float multiplier = powf(2.0f, n / 12.0f);
+            phase_increment = pitch(base_freq * multiplier); 
+        }
         phase_increment = 0;
     }
 }
@@ -126,8 +130,13 @@ void EXTI2_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF2) {
         EXTI->PR1 |= EXTI_PR1_PIF2;
-        phase_increment = pitch(note6);
-        while (!gpio_read(A7)) { }
+        const float base_freq = pitch(note6);
+        while (!gpio_read(A7)) {
+            uint16_t adc_val = adc_read_single();  // 0–63
+            float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
+            float multiplier = powf(2.0f, n / 12.0f);
+            phase_increment = pitch(base_freq * multiplier); 
+        }
         phase_increment = 0;
     }
 }
@@ -136,8 +145,13 @@ void EXTI1_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF1) {
         EXTI->PR1 |= EXTI_PR1_PIF1;
-        phase_increment = pitch(note5);
-        while (!gpio_read(A1)) { }
+        const float base_freq = pitch(note5);
+        while (!gpio_read(A1)) {
+            uint16_t adc_val = adc_read_single();  // 0–63
+            float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
+            float multiplier = powf(2.0f, n / 12.0f);
+            phase_increment = pitch(base_freq * multiplier); 
+        }
         phase_increment = 0;
     }
 }
@@ -146,20 +160,35 @@ void EXTI9_5_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF5) {
         EXTI->PR1 |= EXTI_PR1_PIF5;
-        phase_increment = pitch(note4);
-        while (!gpio_read(A4)) { }
+        const float base_freq = pitch(note4);
+        while (!gpio_read(A4)) {
+            uint16_t adc_val = adc_read_single();  // 0–63
+            float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
+            float multiplier = powf(2.0f, n / 12.0f);
+            phase_increment = pitch(base_freq * multiplier); 
+        }
         phase_increment = 0;
     }
     if (EXTI->PR1 & EXTI_PR1_PIF6) {
         EXTI->PR1 |= EXTI_PR1_PIF6;
-        phase_increment = pitch(note3);
-        while (!gpio_read(A5)) { }
+        const float base_freq = pitch(note3);
+        while (!gpio_read(A5)) {
+            uint16_t adc_val = adc_read_single();  // 0–63
+            float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
+            float multiplier = powf(2.0f, n / 12.0f);
+            phase_increment = pitch(base_freq * multiplier); 
+        }
         phase_increment = 0;
     }
     if (EXTI->PR1 & EXTI_PR1_PIF7) {
         EXTI->PR1 |= EXTI_PR1_PIF7;
-        phase_increment = pitch(note2);
-        while (!gpio_read(A6)) { }
+        const float base_freq = pitch(note2);
+        while (!gpio_read(A6)) {
+            uint16_t adc_val = adc_read_single();  // 0–63
+            float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
+            float multiplier = powf(2.0f, n / 12.0f);
+            phase_increment = pitch(base_freq * multiplier); 
+        }
         phase_increment = 0;
     }
 }
