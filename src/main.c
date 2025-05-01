@@ -61,6 +61,10 @@ void config_gpio_interrupt(void)
     SYSCFG->EXTICR[1] &= ~(0xF << 12);
     EXTI->FTSR1 |= EXTI_FTSR1_FT7;
     EXTI->IMR1 |= EXTI_IMR1_IM7;
+    // Port D1
+    SYSCFG->EXTICR[1] &= ~(0xF << 4);
+    EXTI->FTSR1 |= EXTI_FTSR1_FT9;
+    EXTI->IMR1 |= EXTI_IMR1_IM9;
 
     // Interupt enable for A4, A5 and A6
     NVIC_SetPriority(EXTI9_5_IRQn, 4);
@@ -188,6 +192,14 @@ void EXTI9_5_IRQHandler(void)
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
             phase_increment = pitch(base_freq * multiplier); 
+        }
+        phase_increment = 0;
+    }
+
+    if (EXTI->PR1 & EXTI_PR1_PIF9) {
+        EXTI->PR1 |= EXTI_PR1_PIF9;
+        while (!gpio_read(D1)) {
+            phase_increment = adc_read_single() << 24;
         }
         phase_increment = 0;
     }
@@ -325,6 +337,8 @@ int main() {
     gpio_config_mode(A5, INPUT);
     gpio_config_pullup(A6, PULL_UP);
     gpio_config_mode(A6, INPUT);
+    gpio_config_pullup(D1, PULL_UP);
+    gpio_config_mode(D1, INPUT);
     config_gpio_interrupt();
     SysTick_initialize();
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
