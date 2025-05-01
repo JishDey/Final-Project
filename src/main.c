@@ -25,7 +25,8 @@ void config_gpio_interrupt(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
     // Port D12
-    SYSCFG->EXTICR[1] = 0b001;
+    SYSCFG->EXTICR[1] &= 0x0;
+    SYSCFG->EXTICR[1] |= 0x1;
     EXTI->FTSR1 |= EXTI_FTSR1_FT4;
     EXTI->IMR1 |= EXTI_IMR1_IM4;
     NVIC_SetPriority(EXTI4_IRQn, 4);
@@ -85,7 +86,7 @@ void DAC_init(void) {
 
 uint32_t pitch(int freq)
 {
-    return ((uint64_t)16777216 * freq) / 380;
+    return ((uint64_t)16777216 * freq) / 190;
 }
 
 
@@ -99,8 +100,14 @@ void EXTI4_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF4) {
         EXTI->PR1 |= EXTI_PR1_PIF4;
-        phase_increment = pitch(note7);
-        while (!gpio_read(D12)) { }
+        const float base_freq = note7;
+        while (!gpio_read(D12)) {
+            phase_increment = adc_read_single() << 24;  // 0–4095
+            // printf("%d\n", adc_read_single());
+            // float n = ((float)adc_val / 4095.0f) * 2.0f - 1.0f;  // n in [-1, +1]
+            // float multiplier = powf(2.0f, n / 12.0f);
+            // phase_increment = pitch(base_freq * multiplier); 
+        }
         phase_increment = 0;
     }
 }
@@ -272,7 +279,7 @@ void sqr_table_init() {
 }
 
 int main() {
-    //host_serial_init();
+    host_serial_init();
     gpio_config_pullup(A3, PULL_OFF);
     gpio_config_mode(A3, ANALOG);
     gpio_config_pullup(D12, PULL_UP);
@@ -295,34 +302,17 @@ int main() {
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
     sin_table_init();
     sqr_table_init();
+    adc_config_single(D3); //placed here so that we can measure the read later
     DAC_init();
-    //phase_increment = 1 << 24;
-    // while (true) {
-    //     phase += phase_increment;
-    //     uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-    //     DAC1->DHR12R1 = sin_table[index];
+    
+    //adc_config_single(D6);
+    // gpio_write(D4, 0);
+    // while(1){
+    //     adc_read_single(); //commented out to measure only the write times
+    //                        //replaced with adc_config_single to measure the config time
+    //     printf("pause\n"); // this is the easiest operation that takes 
+    //                        //a long time, which makes it easier for the oscilliscope to parse
     // }
-
-    // DAC1->CR &= ~(DAC_CR_WAVE1 | DAC_CR_MAMP1 | DAC_CR_TSEL1); // Clear WAVE, MAMP, TSEL
-    // DAC1->CR |= DAC_CR_WAVE1_1;          // Enable triangle wave generation (WAVE1 = 0b10)
-    
-    // DAC1->CR |= DAC_CR_TEN1;             // Enable trigger (TEN1)
-    // DAC1->CR |= DAC_CR_EN1;              // Enable DAC Channel 1
-    
-    /*
-    host_serial_init();
-    gpio_config_mode(D4, 1);
-    adc_config_single(A0); //placed here so that we can measure the read later
-    gpio_write(D4, 0);
-    while(1){
-        gpio_write(D4, 1);
-        adc_read_single(); //commented out to measure only the write times
-                           //replaced with adc_config_single to measure the config time
-        gpio_write(D4, 0);
-        printf("pause\n"); // this is the easiest operation that takes 
-                           //a long time, which makes it easier for the oscilliscope to parse
-    }
-    */
     while(1){ }
 
 }
