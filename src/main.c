@@ -1,25 +1,28 @@
 #include <stm32l432xx.h>
 #include "ee14lib.h"
 #include <math.h>
+#define MAXWAVENUM 3
 
 int _write(int file, char *data, int len){
     serial_write(USART2, data, len);
     return len;
 }
 
+
 uint32_t phase = 0;
 uint32_t phase_increment = 0;
 uint8_t octave = 1;
+uint8_t wave_number = 0;
 
 
-signed int sin_table[256];
+signed int wave_tables[256][MAXWAVENUM];
 signed int sqr_table[256];
 
 void SysTick_Handler(void)
 {
     phase += phase_increment;
     uint8_t index = (phase >> 24) & 0xFF;  // Take top bits for table index
-    DAC1->DHR12R1 = sin_table[index];
+    DAC1->DHR12R1 = wave_tables[index][wave_number];
 }
 
 void config_gpio_interrupt(void)
@@ -70,6 +73,10 @@ void config_gpio_interrupt(void)
     SYSCFG->EXTICR[2] &= ~(0xF << 8);
     EXTI->FTSR1 |= EXTI_FTSR1_FT10;
     EXTI->IMR1 |= EXTI_IMR1_IM10;
+    // Port D10
+    SYSCFG->EXTICR[2] &= ~(0xF << 12);
+    EXTI->FTSR1 |= EXTI_FTSR1_FT11;
+    EXTI->IMR1 |= EXTI_IMR1_IM11;
 
     NVIC_SetPriority(EXTI15_10_IRQn, 3);
     NVIC_EnableIRQ(EXTI15_10_IRQn);
@@ -207,7 +214,7 @@ void EXTI9_5_IRQHandler(void)
     if (EXTI->PR1 & EXTI_PR1_PIF9) {
         EXTI->PR1 |= EXTI_PR1_PIF9;
         while (!gpio_read(D1)) {
-            phase_increment = adc_read_single() << 24;
+            phase_increment = (adc_read_single() << 23) - (1<<22);
         }
         phase_increment = 0;
     }
@@ -216,9 +223,23 @@ void EXTI9_5_IRQHandler(void)
 void EXTI15_10_IRQHandler(void) {
     if (EXTI->PR1 & EXTI_PR1_PIF10) {
         EXTI->PR1 |= EXTI_PR1_PIF10;
-        octave++;
-        if(octave >= 4){
-            octave = 0;
+        for (volatile int i = 0; i < 5000; i++) { } //debounce
+        if(!gpio_read(D0)){
+            octave++;
+            if(octave >= 4){
+                octave = 0;
+            }
+        }
+    }
+
+    if (EXTI->PR1 & EXTI_PR1_PIF11) {
+        EXTI->PR1 |= EXTI_PR1_PIF11;
+        for (volatile int i = 0; i < 5000; i++) { } //debounce
+        if(!gpio_read(D10)){
+            wave_number++;
+            if(wave_number >= MAXWAVENUM){
+                wave_number = 0;
+            }
         }
     }
 }
@@ -320,20 +341,28 @@ void sin_table_init() {
     float sf;
     for (int i = 0; i < 256; i++){
         sf = cos(3.1415926 * ((float)i / 128));
-        sin_table[i] = (1+sf) * 2048;
-        if(sin_table[i] >= 0x1000){
-            sin_table[i] = 0xFFF;
+        wave_tables[i][0] = (1+sf) * 2000;
+        if(wave_tables[i][0] >= 0x1000){
+            wave_tables[i][0] = 0xFFF;
         }
     }
 }
 
 void sqr_table_init() {
-    float sf;
     for (int i = 0; i < 256; i++){
         if(i < 128)
-            sqr_table[i] = 0;
+            wave_tables[i][1] = 0;
         else
-            sqr_table[i] = 2048;
+            wave_tables[i][1] = 1400;
+    }
+}
+
+void tng_table_init() {
+    for (int i = 0; i < 128; i++){
+        wave_tables[i][2] = i*14;
+    }
+    for (int i = 127; i >= 0; i--){
+        wave_tables[i+128][2] = 1792-i*14;
     }
 }
 
@@ -359,12 +388,15 @@ int main() {
     gpio_config_mode(D1, INPUT);
     gpio_config_pullup(D0, PULL_UP);
     gpio_config_mode(D0, INPUT);
+    gpio_config_pullup(D10, PULL_UP);
+    gpio_config_mode(D10, INPUT);
     config_gpio_interrupt();
     SysTick_initialize();
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
     sin_table_init();
     sqr_table_init();
+    tng_table_init();
     adc_config_single(D3); //placed here so that we can measure the read later
     DAC_init();
     
