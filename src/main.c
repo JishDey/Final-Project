@@ -115,7 +115,7 @@ void EXTI3_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF3) {
         EXTI->PR1 |= EXTI_PR1_PIF3;
-        const float base_freq = pitch(note1);
+        const float base_freq = note1;
         while (!gpio_read(A2)) {
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
@@ -130,7 +130,7 @@ void EXTI2_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF2) {
         EXTI->PR1 |= EXTI_PR1_PIF2;
-        const float base_freq = pitch(note6);
+        const float base_freq = note6;
         while (!gpio_read(A7)) {
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
@@ -145,7 +145,7 @@ void EXTI1_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF1) {
         EXTI->PR1 |= EXTI_PR1_PIF1;
-        const float base_freq = pitch(note5);
+        const float base_freq = note5;
         while (!gpio_read(A1)) {
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
@@ -160,7 +160,7 @@ void EXTI9_5_IRQHandler(void)
 {
     if (EXTI->PR1 & EXTI_PR1_PIF5) {
         EXTI->PR1 |= EXTI_PR1_PIF5;
-        const float base_freq = pitch(note4);
+        const float base_freq = note4;
         while (!gpio_read(A4)) {
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
@@ -171,7 +171,7 @@ void EXTI9_5_IRQHandler(void)
     }
     if (EXTI->PR1 & EXTI_PR1_PIF6) {
         EXTI->PR1 |= EXTI_PR1_PIF6;
-        const float base_freq = pitch(note3);
+        const float base_freq = note3;
         while (!gpio_read(A5)) {
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
@@ -182,7 +182,7 @@ void EXTI9_5_IRQHandler(void)
     }
     if (EXTI->PR1 & EXTI_PR1_PIF7) {
         EXTI->PR1 |= EXTI_PR1_PIF7;
-        const float base_freq = pitch(note2);
+        const float base_freq = note2;
         while (!gpio_read(A6)) {
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
