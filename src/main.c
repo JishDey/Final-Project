@@ -9,6 +9,7 @@ int _write(int file, char *data, int len){
 
 uint32_t phase = 0;
 uint32_t phase_increment = 0;
+uint8_t octave = 1;
 
 
 signed int sin_table[256];
@@ -65,6 +66,13 @@ void config_gpio_interrupt(void)
     SYSCFG->EXTICR[1] &= ~(0xF << 4);
     EXTI->FTSR1 |= EXTI_FTSR1_FT9;
     EXTI->IMR1 |= EXTI_IMR1_IM9;
+    // Port D0
+    SYSCFG->EXTICR[2] &= ~(0xF << 8);
+    EXTI->FTSR1 |= EXTI_FTSR1_FT10;
+    EXTI->IMR1 |= EXTI_IMR1_IM10;
+
+    NVIC_SetPriority(EXTI15_10_IRQn, 3);
+    NVIC_EnableIRQ(EXTI15_10_IRQn);
 
     // Interupt enable for A4, A5 and A6
     NVIC_SetPriority(EXTI9_5_IRQn, 4);
@@ -109,7 +117,7 @@ void EXTI4_IRQHandler(void)
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
-            phase_increment = pitch(base_freq * multiplier); 
+            phase_increment = pitch(base_freq * multiplier) << octave; 
         }
         phase_increment = 0;
     }
@@ -124,7 +132,7 @@ void EXTI3_IRQHandler(void)
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
-            phase_increment = pitch(base_freq * multiplier); 
+            phase_increment = pitch(base_freq * multiplier) << octave; 
         }
         phase_increment = 0;
     }
@@ -139,7 +147,7 @@ void EXTI2_IRQHandler(void)
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
-            phase_increment = pitch(base_freq * multiplier); 
+            phase_increment = pitch(base_freq * multiplier) << octave; 
         }
         phase_increment = 0;
     }
@@ -154,7 +162,7 @@ void EXTI1_IRQHandler(void)
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
-            phase_increment = pitch(base_freq * multiplier); 
+            phase_increment = pitch(base_freq * multiplier) << octave; 
         }
         phase_increment = 0;
     }
@@ -169,7 +177,7 @@ void EXTI9_5_IRQHandler(void)
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
-            phase_increment = pitch(base_freq * multiplier); 
+            phase_increment = pitch(base_freq * multiplier) << octave; 
         }
         phase_increment = 0;
     }
@@ -180,7 +188,7 @@ void EXTI9_5_IRQHandler(void)
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
-            phase_increment = pitch(base_freq * multiplier); 
+            phase_increment = pitch(base_freq * multiplier) << octave; 
         }
         phase_increment = 0;
     }
@@ -191,7 +199,7 @@ void EXTI9_5_IRQHandler(void)
             uint16_t adc_val = adc_read_single();  // 0–63
             float n = ((float)adc_val / 63) * 2.0f - 1.0f;  // n in [-1, +1]
             float multiplier = powf(2.0f, n / 12.0f);
-            phase_increment = pitch(base_freq * multiplier); 
+            phase_increment = pitch(base_freq * multiplier) << octave; 
         }
         phase_increment = 0;
     }
@@ -202,6 +210,16 @@ void EXTI9_5_IRQHandler(void)
             phase_increment = adc_read_single() << 24;
         }
         phase_increment = 0;
+    }
+}
+
+void EXTI15_10_IRQHandler(void) {
+    if (EXTI->PR1 & EXTI_PR1_PIF10) {
+        EXTI->PR1 |= EXTI_PR1_PIF10;
+        octave++;
+        if(octave >= 4){
+            octave = 0;
+        }
     }
 }
 
@@ -339,6 +357,8 @@ int main() {
     gpio_config_mode(A6, INPUT);
     gpio_config_pullup(D1, PULL_UP);
     gpio_config_mode(D1, INPUT);
+    gpio_config_pullup(D0, PULL_UP);
+    gpio_config_mode(D0, INPUT);
     config_gpio_interrupt();
     SysTick_initialize();
     RCC->APB1ENR1 |= RCC_APB1ENR1_DAC1EN; //dac clock enable
