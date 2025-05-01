@@ -216,9 +216,12 @@ void EXTI9_5_IRQHandler(void)
 void EXTI15_10_IRQHandler(void) {
     if (EXTI->PR1 & EXTI_PR1_PIF10) {
         EXTI->PR1 |= EXTI_PR1_PIF10;
-        octave++;
-        if(octave >= 4){
-            octave = 0;
+        for (volatile int i = 0; i < 5000; i++) { } //debounce
+        if(!gpio_read(D0)){
+            octave++;
+            if(octave >= 4){
+                octave = 0;
+            }
         }
     }
 }
