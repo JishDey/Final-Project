@@ -1,7 +1,7 @@
 #include <stm32l432xx.h>
 #include "ee14lib.h"
 #include <math.h>
-#define MAXWAVENUM 3
+#define MAXWAVENUM 4
 
 int _write(int file, char *data, int len){
     serial_write(USART2, data, len);
@@ -223,7 +223,7 @@ void EXTI9_5_IRQHandler(void)
 void EXTI15_10_IRQHandler(void) {
     if (EXTI->PR1 & EXTI_PR1_PIF10) {
         EXTI->PR1 |= EXTI_PR1_PIF10;
-        for (volatile int i = 0; i < 5000; i++) { } //debounce
+        for (volatile int i = 0; i < 20000; i++) { } //debounce
         if(!gpio_read(D0)){
             octave++;
             if(octave >= 4){
@@ -234,7 +234,7 @@ void EXTI15_10_IRQHandler(void) {
 
     if (EXTI->PR1 & EXTI_PR1_PIF11) {
         EXTI->PR1 |= EXTI_PR1_PIF11;
-        for (volatile int i = 0; i < 5000; i++) { } //debounce
+        for (volatile int i = 0; i < 20000; i++) { } //debounce
         if(!gpio_read(D10)){
             wave_number++;
             if(wave_number >= MAXWAVENUM){
@@ -366,6 +366,23 @@ void tng_table_init() {
     }
 }
 
+void czy_table_init() {
+    for (int i = 0; i < 256; i++){
+        if(i < 128)
+            wave_tables[i][3] = 0;
+        else
+            wave_tables[i][3] = 700;
+    }
+    float sf;
+    for (int i = 0; i < 256; i++){
+        sf = cos(3.1415926 * ((float)i / 64));
+        wave_tables[i][3] += (1+sf) * 1200;
+        if(wave_tables[i][3] >= 0x1000){
+            wave_tables[i][3] = 0xFFF;
+        }
+    }
+}
+
 int main() {
     host_serial_init();
     gpio_config_pullup(A3, PULL_OFF);
@@ -397,6 +414,7 @@ int main() {
     sin_table_init();
     sqr_table_init();
     tng_table_init();
+    czy_table_init();
     adc_config_single(D3); //placed here so that we can measure the read later
     DAC_init();
     
