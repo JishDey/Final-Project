@@ -11,7 +11,7 @@ int _write(int file, char *data, int len){
 
 uint32_t phase = 0;
 uint32_t phase_increment = 0;
-uint8_t octave = 1;
+int8_t octave = 1;
 uint8_t wave_number = 0;
 
 
@@ -96,12 +96,12 @@ void DAC_init(void) {
 }
 
 #define note7 262
-#define note6 294
-#define note5 330
+#define note6 295
+#define note5 328
 #define note4 349
-#define note3 392
-#define note2 440
-#define note1 494
+#define note3 393
+#define note2 437
+#define note1 491
 
 uint32_t pitch(int freq)
 {
@@ -213,8 +213,11 @@ void EXTI9_5_IRQHandler(void)
 
     if (EXTI->PR1 & EXTI_PR1_PIF9) {
         EXTI->PR1 |= EXTI_PR1_PIF9;
-        while (!gpio_read(D1)) {
-            phase_increment = (adc_read_single() << 23) - (1<<22);
+        if (!gpio_read(D1)) {
+            wave_number++;
+            if(wave_number >= MAXWAVENUM){
+                wave_number = 0;
+            }
         }
         phase_increment = 0;
     }
@@ -225,9 +228,9 @@ void EXTI15_10_IRQHandler(void) {
         EXTI->PR1 |= EXTI_PR1_PIF10;
         for (volatile int i = 0; i < 20000; i++) { } //debounce
         if(!gpio_read(D0)){
-            octave++;
-            if(octave >= 4){
-                octave = 0;
+            octave--;
+            if(octave < 0){
+                octave = 3;
             }
         }
     }
@@ -236,9 +239,9 @@ void EXTI15_10_IRQHandler(void) {
         EXTI->PR1 |= EXTI_PR1_PIF11;
         for (volatile int i = 0; i < 20000; i++) { } //debounce
         if(!gpio_read(D10)){
-            wave_number++;
-            if(wave_number >= MAXWAVENUM){
-                wave_number = 0;
+            octave++;
+            if(octave >= 4){
+                octave = 0;
             }
         }
     }
@@ -359,10 +362,10 @@ void sqr_table_init() {
 
 void tng_table_init() {
     for (int i = 0; i < 128; i++){
-        wave_tables[i][2] = i*14;
+        wave_tables[i][2] = i*15;
     }
     for (int i = 127; i >= 0; i--){
-        wave_tables[i+128][2] = 1792-i*14;
+        wave_tables[i+128][2] = 1920-i*15;
     }
 }
 
@@ -417,7 +420,6 @@ int main() {
     czy_table_init();
     adc_config_single(D3); //placed here so that we can measure the read later
     DAC_init();
-    
     //adc_config_single(D6);
     // gpio_write(D4, 0);
     // while(1){
